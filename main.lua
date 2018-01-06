@@ -3,7 +3,8 @@ init(0, 0)
 require("TSLib")
 w,h = getScreenSize()
 
-a1080 = 1.33
+-- 不同分辨率手机的时间系数
+a1080 = 1.33 
 a720  = 1.9
 i5	  = 2.21
 i6	  = 1.825
@@ -123,29 +124,30 @@ function DoLoop()
 end
 
 function DoJump() 
-	local x, y = GetCalcSelfPosition()
+	local x, y = GetCalcSelfPosition()--找小人底部中心点
 	if x == -1 or x == 0 then
 		return false
 	end
-	local endX = screenWidth - 3	
-	local endY = screenHeight * 0.7
-	local startX = 0
-	local startY = screenHeight * 0.2
+	
+	local startX = 0					-- 找色起始X值是0点
+	local startY = screenHeight * 0.2	-- 找色起始Y值是屏幕高度*0.2,因为再往上没有需要找的色.
+	local endX = screenWidth - 3		-- 找色结束X值是屏幕宽度-3,防止循环越界.
+	local endY = screenHeight * 0.7		-- 找色结束Y值是屏幕高度*0.7,因为再往下没有需要找的色.
 
-	if x < screenWidth / 2 then
-		startX =  screenWidth / 2
-	else
-		endX = screenWidth / 2
+	if x < screenWidth / 2 then			-- 如果找到黑色人偶的坐标在屏幕左半部(X < 屏幕宽度/2)
+		startX =  screenWidth / 2		-- 那么目标点肯定在屏幕右半部,找色起始X值等于屏幕宽度的一半.
+	else								-- 如果找到黑色人偶的坐标在屏幕右半部(X > 屏幕宽度/2)
+		endX = screenWidth / 2			-- 那么目标点肯定在屏幕左半部,找色结束X值等于屏幕宽度的一半.
 	end
 	
 	local targetX, targetY = GetTargetPosition(startX, startY, endX, endY)
+	-- 通过三角函数,使用人偶底部中心坐标和目标坐标计算距离,x,y是人偶底部中心坐标,targetX,targetY 是盒子的中心坐标,
 	local distance = math.sqrt( (x - targetX) * (x - targetX) + (y - targetY) * (y - targetY) )
-	local pressTime = CalcHoldTime(distance)
+	local pressTime = CalcHoldTime(distance) -- 通过距离*时间系数得到按压的延时时长
 	
---	dialog("人物坐标 ："..x..":"..y..",目标坐标 ："..targetX..":"..targetY..",距离 ："..distance..",系数 : "..edt_coef..",间隔 : " .. edt_time)
 	Touch(targetX,targetY, pressTime)
 	math.randomseed(getRndNum()) -- 随机种子初始化真随机数
-	num = math.random(edt_time-500, edt_time+1000) -- 随机获取一个1-100之间的数字
+	num = math.random(edt_time-500, edt_time+1000) -- 随机获取一个延时-500到延时+1000之间的数字,通过随机时间间隔跳跃,增加成功上传成绩几率
 	mSleep(num)
 	return true
 end
@@ -158,15 +160,15 @@ end
 function GetTargetPosition(startX, startY, endX, endY)
 	local step = 3
 	local r, g, b, rr, gg, bb 
-	for y = startY , endY, step do
-		r, g, b = getColorRGB(1, y)
+	for y = startY , endY, step do--上往下开始每三个像素取一下颜色值
+		r, g, b = getColorRGB(1, y)--X 坐标点为 1，Y 坐标点在起始点与终点之间
 		for x = startX, endX , step do
 			rr, gg, bb  = getColorRGB(x, y)
-			if isColor(r, g, b, rr, gg, bb, 98)  then
+			if isColor(r, g, b, rr, gg, bb, 98)  then--将取到的颜色值进行对比
 				r = rr
 				g = gg
 				b = bb
-			else
+			else--找到一个和刚才的点颜色不一样的点
 				return x, y + targetPositionOffset
 			end
 		end
